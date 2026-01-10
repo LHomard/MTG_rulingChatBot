@@ -1,4 +1,4 @@
-import requests, json
+import requests, sqlite3
 
 bulkAPI_URL = "https://api.scryfall.com/bulk-data"
 bulk = requests.get(bulkAPI_URL).json()
@@ -52,7 +52,16 @@ def relevant_cards(card):
 
 
 filtered_cards = [c for c in card_response]    
-print(len(filtered_cards))
+
+
+
+conn = sqlite3.connect("database.db")
+cur = conn.cursor()
+
+cur.execute("CREATE TABLE IF NOT EXISTS scryfallbulkdata(card_id, card_name, power, toughness, color, oracle_id, oracle_text, rulings)")
+
+res = cur.execute("SELECT name FROM sqlite_master")
+print(res.fetchone())
 
 
 
