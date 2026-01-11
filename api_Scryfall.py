@@ -1,4 +1,4 @@
-import requests, sqlite3
+import requests, sqlite3, json
 
 bulkAPI_URL = "https://api.scryfall.com/bulk-data"
 bulk = requests.get(bulkAPI_URL).json()
@@ -31,19 +31,9 @@ def getOracleCard(cards, name):
             return card
     return None
     
-
-
-RULE_KEYWORDS = {
-    "deathtouch", "flying", "trample", "ward", "cascade",
-    "flash", "double strike", "lifelink", "hexproof",
-    "indestructible", "menace"
-}
     
 def relevant_cards(card):
     oracle_text = card.get("oracle_text", "").lower()
-    #keyword = set(k.lower() for k in card.get('keywords', []))
-
-    #relevent_keywords = bool(keyword & RULE_KEYWORDS)
     relevent_oracle = oracle_text and len(oracle_text) > 50
 
     return (
@@ -51,17 +41,53 @@ def relevant_cards(card):
     )
 
 
-filtered_cards = [c for c in card_response]    
-
+filtered_cards = [c for c in card_response]   
 
 
 conn = sqlite3.connect("database.db")
 cur = conn.cursor()
 
-cur.execute("CREATE TABLE IF NOT EXISTS scryfallbulkdata(card_id, card_name, power, toughness, color, oracle_id, oracle_text, rulings)")
+cur.execute("""CREATE TABLE IF NOT EXISTS scryfallbulkdata(
+                card_id TEXT PRIMARY KEY,
+                name TEXT,
+                mana_cost TEXT,
+                cmc INTEGER,
+                type_line TEXT,
+                oracle_text TEXT,
+                power TEXT,
+                toughness TEXT,
+                colors TEXT,
+                color_identity TEXT,
+                keywords TEXT
+                )
+            """)
 
-res = cur.execute("SELECT name FROM sqlite_master")
-print(res.fetchone())
+for card in filtered_cards:
+    print(card)
 
+    cur.execute("INSERT INTO scryfallbulkdata VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                card['id'],
+                card['name'], 
+                card['mana_cost'],
+                card['cmc'],
+                card['type_line'],
+                card['oracle_text'],
+                card['power'], 
+                card['toughness'],
+                json.dumps(card.get('colors', [])),
+                json.dumps(card.get('color_identity', [])),
+                json.dumps(card.get('keywords', []))
+                )
+            )
+    
+    conn.commit()
 
+cur.execute("""
+    SELECT card_id, name, mana_cost, colors
+    FROM scryfallbulkdata
+    LIMIT 5
+""")
 
+for row in cur.fetchall():
+    print(row)
