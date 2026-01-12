@@ -44,7 +44,7 @@ def relevant_cards(card):
 filtered_cards = [c for c in card_response]   
 
 
-conn = sqlite3.connect("database.db")
+conn = sqlite3.connect("database.db", timeout=30)
 cur = conn.cursor()
 
 cur.execute("""CREATE TABLE IF NOT EXISTS scryfallbulkdata(
@@ -63,9 +63,23 @@ cur.execute("""CREATE TABLE IF NOT EXISTS scryfallbulkdata(
             """)
 
 for card in filtered_cards:
-    print(card)
 
-    cur.execute("INSERT INTO scryfallbulkdata VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    if 'power' or 'thoughness' or 'mana_cost' or 'oracle_text' not in card.keys():
+        card.update({'power':'', 'toughness':'', 'mana_cost':'', 'oracle_text':''})
+
+    cur.execute("""INSERT INTO scryfallbulkdata(card_id, name, mana_cost, cmc, type_line, oracle_text,
+                    power, toughness, colors, color_identity, keywords) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(card_id) DO UPDATE SET
+                    name = excluded.name,
+                    mana_cost = excluded.mana_cost,
+                    cmc = excluded.cmc,
+                    type_line = excluded.type_line,
+                    oracle_text = excluded.oracle_text,
+                    power = excluded.power,
+                    toughness = excluded.toughness,
+                    colors = excluded.colors,
+                    color_identity = excluded.color_identity,
+                    keywords = excluded.keywords """,
                 (
                 card['id'],
                 card['name'], 
