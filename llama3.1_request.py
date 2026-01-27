@@ -1,45 +1,98 @@
-import ollama, mysql.connector
+import ollama, mysql.connector, faiss
+from langchain_ollama import OllamaEmbeddings
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
+from mysql.connector import pooling, Error
+#embedding_dim = len(embeddings.embed_query("hello world"))
+#index = faiss.IndexFlatL2(embedding_dim)
+
+##vector_store = FAISS(
+#    embedding_function=embeddings,
+#    index=index,
+#    docstore=InMemoryDocstore(),
+#    index_to_docstore_id={},
+#)
 
 client = ollama.Client(host='http://localhost:11434',
   headers={'x-some-header': 'some-value'}
 )
 
-def fetch_content(question):
-    
-    conn = mysql.connector.connect(
+conn = mysql.connector.connect(
       host='localhost',
       user='root',
       password="(Lolochac1!)",
       database = 'db_mtg'
     )
 
-    cur = conn.cursor()
+#embeddings = OllamaEmbeddings(model="llama3")
 
-    cur = conn.cursor(dictionary=True)
 
-    user_input = f"%{question}%"
-    user_input.lower()
+try:
+    connPool = pooling.MySQLConnectionPool(
+        pool_name='mtgPool',
+        pool_size=5,
+        host='localhost',
+        user='root',
+        password="(Lolochac1!)",
+        database = 'db_mtg'
+        )     
+except Error as e:
+    print(f"Error creating connection pool: {e}")
+    connPool = None
+    
 
-    cur.execute(
-        """SELECT name, oracle_text
-        FROM scryfallbulkdata
-        WHERE name LIKE %s
-        OR oracle_text LIKE %s
-        LIMIT 5""", (user_input, user_input)
-    )
-
-    rows = cur.fetchall()
-    conn.close()
-
-    if not rows:
+def fetch_content(question):
+    if not connPool:
+        print("echec a la creation de pool")
         return ""
     
-    context = ""
-    for row in rows:
-        context += f"Card : {row['name']}\n"
-        context += f"Oracle text : {row['oracle_text']}\n\n"
+    connection = None
+    cursor = None
 
-    return context
+    try:
+        conn = connPool.get_connection()
+
+        if conn.is_connected():
+            print("je suis connecter")
+
+        cursor = conn.cursor(dictionary=True)
+
+        user_input = f"{question}"
+        user_input.lower()
+
+        cursor.execute(
+            """SELECT name, oracle_text, power, toughness,
+                MATCH(name, oracle_text) AGAINST (%s IN NATURAL LANGUAGE MODE) AS score
+                FROM scryfallbulkdata
+                WHERE MATCH(name, oracle_text) AGAINST (%s IN NATURAL LANGUAGE MODE)
+                ORDER BY score DESC
+                LIMIT 3;""", (user_input, user_input)
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        if not rows:
+            return ""
+        
+        context = ""
+        for row in rows:
+            context += f"Card : {row['name']}\n"
+            context += f"Oracle text : {row['oracle_text']}\n\n"
+            if row.get('power') and row.get('toughness'):
+                context += f"Power/Toughness : {row['power']}/{row['toughness']}\n"
+            context += "\n"
+        return context
+
+    except Error as e:
+        print(f"Erreur de connection : {e}")
+        return ""
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 def build_prompt(context, question):
@@ -54,6 +107,8 @@ def build_prompt(context, question):
 
         If the scenario is incomplete or fragmented, explicitly say:
         "I need the full game state and stack to answer correctly."
+
+        Always respond in the user language
 
         Context:
         {context}

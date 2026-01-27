@@ -28,6 +28,8 @@ cur.execute("""CREATE TABLE IF NOT EXISTS scryfallbulkdata(
                 )"""
             )
 
+values = []
+
 for card in filtered_cards:
 
     card.setdefault('power', '')
@@ -66,7 +68,7 @@ for card in filtered_cards:
                 )
             )
     
-    conn.commit()
+conn.commit()
 
 cur.execute("""
     SELECT card_id, name, mana_cost, colors
