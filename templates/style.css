@@ -1,0 +1,60 @@
+.custom-nav-btn {
+    background-color: transparent;
+    color: white;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    display: inline-block;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    gap: 10rem;
+    transition: background-color 0.8s ease, color 0.2s ease;
+}
+
+.custom-nav-btn-home{
+    border: 2px solid rgb(56, 235, 56);
+}
+
+.custom-nav-btn-home:hover{
+    background-color: rgb(56, 235, 56);
+    color: white;
+}
+
+.custom-nav-btn-card{
+    border: 2px solid rgb(235, 56, 56);
+}
+
+.custom-nav-btn-card:hover{
+    background-color: rgb(235, 56, 56);
+    color: white;
+}
+
+.custom-nav-btn-deckbuilding{
+    border: 2px solid rgb(56, 56, 235);
+}
+
+.custom-nav-btn-deckbuilding:hover{
+    background-color: rgb(56, 56, 235);
+    color: white;
+}
+
+.custom-nav-btn-profil{
+    border: 2px solid rgb(255, 255, 255);
+}
+
+.custom-nav-btn-profil:hover{
+    background-color: rgb(255, 255, 235);
+    color: black;
+}
+
+.custom-nav-btn-about {
+        border: 2px solid rgb(0, 0, 0);
+}
+
+.custom-nav-btn-about:hover{
+    background-color: rgb(0, 0, 0);
+    color: white;
+}
+
