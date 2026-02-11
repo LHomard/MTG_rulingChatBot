@@ -4,7 +4,7 @@ from api_Scryfall import filtered_cards
 conn = mysql.connector.connect(
     host='localhost',
     user='root',
-    password="(Lolochac1!)",
+    password="",
     database = 'db_mtg')
 
 if conn.is_connected():
